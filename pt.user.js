@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     交大差勤自動化 NCTU PT-Attendance
 // @author   Sean Wei
-// @version  1.0
+// @version  2023.07.31.1
 // @grant    none
 // @include  https://pt-attendance.nctu.edu.tw/
 // @include  https://pt-attendance.nycu.edu.tw/
@@ -55,12 +55,12 @@ async function fillPT() {
         }
 
         let steps = [8, 18, 5];  // 08:00 - 12:00, 13:00 - 17:00, 18:00 - 22:00
-        if (day >= formInfo['endDay'] - 3)  // final days
-            steps = [8, 18, 1];  // 08:00 - 09:00, 09:00 - 10:00, ....
+        if (day >= formInfo['endDay'] - 2)  // final days (0, -1, -2)
+            steps = [8, 17, 1];  // 08:00 - 09:00, 09:00 - 10:00, ....
 
         for (let time = steps[0]; time <= steps[1]; time += steps[2]) {
             let datetimepicker1 = `${today} ${padLeft(time, 2)}:00:00`
-            let datetimepicker2 = `${today} ${padLeft(time + 4, 2)}:00:00`
+            let datetimepicker2 = `${today} ${padLeft(time + steps[2], 2)}:00:00`
 
             psel.value = formInfo['workP'];
             document.getElementById('datetimepicker1').value = datetimepicker1;
