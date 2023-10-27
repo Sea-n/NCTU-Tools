@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name     交大差勤自動化 NCTU PT-Attendance
 // @author   Sean Wei
-// @version  2023.07.31.1
+// @version  2023.10.27.1
 // @grant    none
-// @include  https://pt-attendance.nctu.edu.tw/
-// @include  https://pt-attendance.nycu.edu.tw/
+// @include  https://pt-attendance.nctu.edu.tw/*
+// @include  https://pt-attendance.nycu.edu.tw/*
 // @icon     https://www.google.com/s2/favicons?domain=www.nycu.edu.tw
 // @downloadURL  https://raw.githubusercontent.com/Sea-n/NCTU-Tools/master/pt.user.js
 // ==/UserScript==
@@ -22,7 +22,7 @@ function sortPlan() {
 }
 
 async function fillPT() {
-    const psel = document.getElementById('pno');
+    const psel = document.getElementById('pno');  // psel will be invalid soon
     const planText = psel.querySelector('option:checked').text.match(': (.*)~(.*) - Pay:')
     if (planText === null) {
         alert('Please select plan first.')
@@ -60,9 +60,9 @@ async function fillPT() {
 
         for (let time = steps[0]; time <= steps[1]; time += steps[2]) {
             let datetimepicker1 = `${today} ${padLeft(time, 2)}:00:00`
-            let datetimepicker2 = `${today} ${padLeft(time + steps[2], 2)}:00:00`
+            let datetimepicker2 = `${today} ${padLeft(time + 4, 2)}:00:00`
 
-            psel.value = formInfo['workP'];
+            document.getElementById('pno').value = formInfo['workP'];  // must use new psel
             document.getElementById('datetimepicker1').value = datetimepicker1;
             document.getElementById('datetimepicker2').value = datetimepicker2;
             document.getElementById('txtBuginfo').value = formInfo['host'];
@@ -74,21 +74,23 @@ async function fillPT() {
         }
     }
   
-  	unsafeWindow.alert = oldAlert;
-  	unsafeWindow.confirm = oldConfirm;
-  	console.log('Done!');
+    unsafeWindow.alert = oldAlert;
+    unsafeWindow.confirm = oldConfirm;
+    console.log('Done!');
 }
 
 
 // Main Function (inf loop)
 setInterval(() => {
     const psel = document.getElementById('pno');
-  	if (psel === null || psel.dataset.sean) return;
+    if (psel === null || psel.dataset.sean) return;
     psel.dataset.sean = 'done';  // don't run again
 
     sortPlan();
-    psel.children[1].selected = true;
-    psel.onchange();  // showBugetName()
+    if (psel.children[0].selected == true) {
+      psel.children[1].selected = true;
+      psel.onchange();  // showBugetName()
+    }
     let fillBtn = document.createElement('input');
     fillBtn.onclick = fillPT;
     fillBtn.type = 'button';
