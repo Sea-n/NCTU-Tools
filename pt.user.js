@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name     交大差勤自動化 NCTU PT-Attendance
 // @author   Sean Wei
-// @version  2023.10.27.1
+// @version  2023.11.26.0
 // @grant    none
 // @include  https://pt-attendance.nctu.edu.tw/*
 // @include  https://pt-attendance.nycu.edu.tw/*
@@ -39,14 +39,21 @@ async function fillPT() {
     }
     console.log({formInfo});
 
-    const failedFunc = (msg) => {};  // do nothing, not checking total filled time
+    /* Error Handling */
+    let today, remToday, lastFill;
+    const failedFunc = (msg) => {
+        remToday += lastFill;
+        console.log(`Alert: "${msg}", lastFill=${lastFill}, remToday=${remToday}`);
+    };
     const oldAlert = unsafeWindow.alert;
-    unsafeWindow.alert = failedFunc;
+    unsafeWindow.alert = exportFunction(failedFunc, unsafeWindow);
     const oldConfirm = unsafeWindow.confirm;
-    unsafeWindow.confirm = failedFunc;
+    unsafeWindow.confirm = exportFunction(failedFunc, unsafeWindow);
 
+    /* Fill with loop */
     for (let day = formInfo['startDay']; day <= formInfo['endDay']; day++) {
-        let today = `${formInfo['yearmon']}-${padLeft(day, 2)}`;
+        today = `${formInfo['yearmon']}-${padLeft(day, 2)}`;
+        remToday = 8;
 
         if (true) {  // The rule to check Saturday or Sunday
             let dayOfTheWeek = (new Date(today)).getDay();
@@ -54,26 +61,26 @@ async function fillPT() {
                 continue;
         }
 
-        let steps = [8, 18, 5];  // 08:00 - 12:00, 13:00 - 17:00, 18:00 - 22:00
-        if (day >= formInfo['endDay'] - 2)  // final days (0, -1, -2)
-            steps = [8, 17, 1];  // 08:00 - 09:00, 09:00 - 10:00, ....
-
-        for (let time = steps[0]; time <= steps[1]; time += steps[2]) {
+        for (let time of [8, 13, 18, 5]) {
+            if (remToday <= 0) break;
+            lastFill = 4;
             let datetimepicker1 = `${today} ${padLeft(time, 2)}:00:00`
-            let datetimepicker2 = `${today} ${padLeft(time + 4, 2)}:00:00`
+            let datetimepicker2 = `${today} ${padLeft(time + lastFill, 2)}:00:00`
 
-            document.getElementById('pno').value = formInfo['workP'];  // must use new psel
+            const psel = document.getElementById('pno');
+            psel.value = formInfo['workP']; psel.onchange();
             document.getElementById('datetimepicker1').value = datetimepicker1;
             document.getElementById('datetimepicker2').value = datetimepicker2;
             document.getElementById('txtBuginfo').value = formInfo['host'];
             document.getElementById('workdata4').value = formInfo['worklog'];
 
+            remToday -= lastFill;
+            console.log(`Filling ${datetimepicker1} ~ ${datetimepicker2}, remToday=${remToday}`);
             document.getElementById('btnSubmit').click();
-            console.log(`Filling ${datetimepicker1} ~ ${datetimepicker2}`);
             await sleep(1000);
         }
     }
-  
+
     unsafeWindow.alert = oldAlert;
     unsafeWindow.confirm = oldConfirm;
     console.log('Done!');
@@ -88,8 +95,8 @@ setInterval(() => {
 
     sortPlan();
     if (psel.children[0].selected == true) {
-      psel.children[1].selected = true;
-      psel.onchange();  // showBugetName()
+        psel.children[1].selected = true;
+        psel.onchange();  // showBugetName()
     }
     let fillBtn = document.createElement('input');
     fillBtn.onclick = fillPT;
